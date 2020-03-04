@@ -123,8 +123,16 @@ class Tree:
 	def viz(self):
 		self.root.viz()
 
-def target(a,b,c):
+def AtimesBplusC(a,b,c):
 	return a*b+c
+
+def AtimesBtimesC(a,b,c):
+	return a*b*c
+
+def AsqrtB(a,b,c):
+	return b**(1/a)
+
+target = AsqrtB#AtimesBtimesC#AtimesBplusC
 
 inputs = [FloatInput, FloatInput, FloatInput]
 
@@ -147,8 +155,13 @@ for treeindex in range(NUMTREES):
 	for trials in range(NUMTREETRIALS):
 		inputvalues = [rand() for i in range(len(inputs))]
 		# TODO outputS?
+
 		treeoutput = tree.evaluate(inputvalues)
-		targetoutput = target(*inputvalues)
+
+		try:
+			targetoutput = target(*inputvalues)
+		except OverflowError:
+			continue
 
 		#print("TREE:", tree.nodes)
 
@@ -166,3 +179,7 @@ for treeindex in range(NUMTREES):
 		print("New minimum: ", global_min)
 		tree.viz()
 		cache[tree] = average_error
+		if global_min == 0:
+			print("FOUND!")
+			# TODO still continue search, minimize nodes
+			break
