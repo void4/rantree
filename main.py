@@ -1,6 +1,8 @@
-from random import randint, choice, random
-from math import sin, cos, tan
+from random import randint, choice, random, uniform
+from math import sin, cos, tan, pi, e
 from time import time
+from queue import Queue
+from copy import deepcopy
 
 def scaledrandom():
 	return (random()-0.5)*4
@@ -11,55 +13,89 @@ def mul(a,b):
 def sum(a,b):
 	return a+b
 
+def div(a,b):
+	return a/b
+
+def w_const(n):
+	def const():
+		return n
+	return const
+
+class Node:
+	def __init__(self, f, nio, input=None):
+		self.f = f
+		self.nio = nio
+		self.children = []
+		self.value = None
+		self.input = input
+
+	def evaluate(self):
+		childvalues = [child.evaluate() for child in self.children]
+
+		if callable(self.f):
+			self.value = self.f(*childvalues)
+		else:
+			return self.f
+
+		return self.value
+
+	def viz(self, depth=0):
+		prefix = "\t" * depth
+		if callable(self.f):
+			print(prefix + str(self.f.__name__))
+		else:
+			if self.input is not None:
+				print(prefix + f"[{self.input}]")
+			else:
+				print(prefix + f"{self.f}")
+
+		for child in self.children:
+			child.viz(depth+1)
+
+	def expr(self):
+		if callable(self.f):
+			args = ','.join([child.expr() for child in self.children])
+			return self.f.__name__ + f"({args})"
+		else:
+			if self.input is not None:
+				return f"[{self.input}]"
+			else:
+				return f"{self.f}"
+
+	def mutate(self, tree):
+		for child in self.children:
+			child.mutate(tree)
+
+		if random() < 0.25:
+			#print("mutate")
+			self.f = tree.getRandomInOutNode(*self.nio).f
+
+
 funcs = {
 	#inputs, outputs
-	sin: [1,1],
-	cos: [1,1],
+	#sin: [1,1],
+	#cos: [1,1],
 	#tan: [1,1],
 	#scaledrandom: [0,1],
 	#time: [0,1],#should be fixed during evaluation
 	mul: [2,1],
 	sum: [2,1],
+	div: [2,1],
+
+	Node(-1, [0,1]): [0,1],
+	Node(2, [0,1]): [0,1],
+
+	#w_const(pi): [0,1],
+	#w_const(e): [0,1],
+
 }
 
-
-class Node:
-	def __init__(self, f, nio):
-		self.f = f
-		self.nio = nio
-		self.children = []
-		self.value = None
-
-	def evaluate(self):
-		childvalues = [child.evaluate() for child in self.children]
-		self.value = self.f(*childvalues)
-		return self.value
-
-	def viz(self, depth=0):
-		prefix = "\t" * depth
-		if hasattr(self, "f"):
-			print(prefix + str(self.f.__name__))
-		else:
-			print(prefix + f"[{self.index}]")
-		for child in self.children:
-			child.viz(depth+1)
-
-
-class FloatInput(Node):
-	def __init__(self, index, nio):
-		self.index = index
-		self.nio = nio
-		self.children = []
-		self.value = None
-
-	def evaluate(self):
-		return self.value
 
 class Tree:
 	def __init__(self, funcs, inputs):
 
 		self.funcs = funcs
-		self.inputs = [Inp(i, [0,1]) for i, Inp in enumerate(inputs)]
+		self.inputs = inputs
 
 		self.possible_nodes = {**funcs, **{inp:[0,1] for inp in self.inputs}}
 
@@ -73,19 +109,26 @@ class Tree:
 	def getIn(self, n):
 		return [item for item in self.possible_nodes.items() if item[1][0]==n]
 
+	def getInOut(self, a, b):
+		return [item for item in self.possible_nodes.items() if item[1][0]==a and item[1][1]==b]
+
+	def getRandomInOutNode(self, a, b):
+		f, nio = choice(self.getInOut(a,b))
+		if isinstance(f, Node):
+			return f
+		return Node(f, nio)
+
 	def getRandomInNode(self, n):
 		f, nio = choice(self.getIn(n))
-		if isinstance(f, FloatInput):#n can be zero
+		if isinstance(f, Node):
 			return f
-		else:
-			return Node(f, nio)
+		return Node(f, nio)
 
 	def getRandomOutNode(self, n):
 		f, nio = choice(self.getOut(n))
-		if isinstance(f, FloatInput):
+		if isinstance(f, Node):
 			return f
-		else:
-			return Node(f, nio)
+		return Node(f, nio)
 
 	def construct(self, maxnodes=10, outputs=1):
 
@@ -116,12 +159,18 @@ class Tree:
 			raise ValueError("Input value len doesn't match # of inputs")
 
 		for i, inputvalue in enumerate(inputvalues):
-			self.inputs[i].value = inputvalue
+			self.inputs[i].f = inputvalue
 
 		return self.root.evaluate()
 
 	def viz(self):
 		self.root.viz()
+
+	def expr(self):
+		return self.root.expr()
+
+	def mutate(self):
+		self.root.mutate(self)
 
 def AtimesBplusC(a,b,c):
 	return a*b+c
@@ -132,32 +181,50 @@ def AtimesBtimesC(a,b,c):
 def AsqrtB(a,b,c):
 	return b**(1/a)
 
-target = AsqrtB#AtimesBtimesC#AtimesBplusC
+def arbitrary(a,b,c):
+	return a*(b-c)+b/a
 
-inputs = [FloatInput, FloatInput, FloatInput]
+target = arbitrary#AsqrtB#AtimesBtimesC#AtimesBplusC
 
-NUMTREES = 1000
-NUMTREETRIALS = 1000
+inputs = [Node(None, [0,1], i) for i in range(3)]
+
+NUMTREES = 1000000
+NUMTREETRIALS = 100
 
 cache = {}
 
 global_min = None
 
 def rand():
-	return (random()-0.5)*2000
+	#return (random()-0.5)*2000
+	return uniform(-1e30, 1e30)
+	#return uniform(-2000, 2000)
+
+q = Queue()
 
 for treeindex in range(NUMTREES):
-	tree = Tree(funcs, inputs)
-	tree.construct(randint(3,10))
+
+	if q.empty():
+		tree = Tree(funcs, inputs)
+		tree.construct(randint(3,20))
+	else:
+		#print("Queue:", q.qsize())
+		tree = q.get()
+		#print("GOT", tree)
 
 	total_error = 0
 
+	fails = 0
 	for trials in range(NUMTREETRIALS):
 		inputvalues = [rand() for i in range(len(inputs))]
 		# TODO outputS?
 
-		treeoutput = tree.evaluate(inputvalues)
-
+		try:
+			treeoutput = tree.evaluate(inputvalues)
+		except ZeroDivisionError:
+			# TODO only fail if target does not raise the same!
+			fails += 1
+			continue
 		try:
 			targetoutput = target(*inputvalues)
 		except OverflowError:
@@ -174,12 +241,18 @@ for treeindex in range(NUMTREES):
 	average_error = total_error/NUMTREETRIALS
 	#print(treeindex, average_error)
 
-	if global_min is None or average_error < global_min:
+	if fails == 0 and (global_min is None or average_error < global_min):
 		global_min = average_error
 		print("New minimum: ", global_min)
-		tree.viz()
+		#tree.viz()
+		print(tree.expr())
 		cache[tree] = average_error
-		if global_min == 0:
+		if global_min == 0:#might be just luck, not all datapoints!
 			print("FOUND!")
 			# TODO still continue search, minimize nodes
 			break
+
+		for c in range(50):
+			newtree = deepcopy(tree)
+			newtree.mutate()
+			q.put(newtree)
