@@ -8,7 +8,7 @@ Expression tree transformation:
 
 - node insertion
 - node mutation
-- node deletion (not yet implemented)
+- node deletion
 
 Expression tree nodes:
 

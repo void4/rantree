@@ -75,6 +75,12 @@ class Node:
 			#print("mutate")
 			self.f = tree.getRandomInOutNode(*self.nio).f
 
+
+		if random() < 0.05:
+			if len(self.children) > 0:
+				subtree = choice(self.children)
+				if len(subtree.children) == len(self.children):
+					self.children = subtree.children
 		# node switch?
 
 		#node insertion
