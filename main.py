@@ -84,7 +84,7 @@ class Node:
 		# node switch?
 
 		#node insertion
-		if depth < 2 and random() < 0.1/(10**depth) and self.nio == [2,1]:
+		if depth < 10 and random() < 0.05/(2**depth) and self.nio == [2,1]:
 			#print(tree, depth)
 			subtree = Node(self.f, deepcopy(self.nio))#deepcopy(self.f)
 			self.f = tree.getRandomInOutNode(2,1).f
