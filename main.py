@@ -195,9 +195,12 @@ cache = {}
 
 global_min = None
 
+sampleMin = -1000000#-1e10#30
+sampleMax = 1000000#1e10#30
+
 def rand():
 	#return (random()-0.5)*2000
-	return uniform(-1e30, 1e30)#use hyperopt to perform testing? markov sampling?
+	return uniform(sampleMin, sampleMax)#use hyperopt to perform testing? markov sampling?
 	#return uniform(-2000, 2000)
 
 q = Queue()
@@ -205,6 +208,10 @@ q = Queue()
 champions = set()
 
 trees_generated = 0
+
+from dynplot import dynplot
+
+dplt = dynplot()
 
 for treeindex in range(NUMTREES):
 
@@ -268,6 +275,21 @@ for treeindex in range(NUMTREES):
 		print("New minimum: ", global_min)
 		#tree.viz()
 		print(tree.expr())
+
+		sampleRange = sampleMax - sampleMin
+		sampleSteps = 1000
+		xdata = []
+		ydata = []
+		fixed = [0,0]
+		for x in range(sampleMin, sampleMax, sampleRange//sampleSteps):
+			try:
+				xdata.append(x)
+				ydata.append(tree.evaluate([x]+fixed))
+			except:
+				pass
+
+		dplt.plot(ydata)
+		dplt.show()
 
 		cache[str(tree.expr())] = stats
 		if global_min == 0:
