@@ -32,10 +32,17 @@ def evolve(target, numinputs):
 
 	trees_generated = 0
 
+	def print_statistics():
+		print("Trees generated: ", trees_generated)
+		print("Queue length: ", q.qsize(), "Bestlist:", len(bestlist), "Champions:", len(champions))
+
 	for treeindex in range(NUMTREES):
 
+		if treeindex % 10000 == 0:
+			print_statistics()
+
 		if q.empty():
-			if random() < 0.001:
+			if random() < 0.05:
 
 				if random() < 0.5 and len(champions) > 0:
 					# TODO don't try same datapoints if sampling range is small, test edge cases?
@@ -101,8 +108,9 @@ def evolve(target, numinputs):
 
 		if fails == 0 and (global_min is None or average_error < global_min or average_error == 0):
 			global_min = average_error
-			print("Trees generated: ", trees_generated)
-			print("Queue length: ", q.qsize(), "Bestlist:", len(bestlist), "Champions:", len(champions))
+
+			print_statistics()
+
 			print("New minimum: ", global_min)
 
 			bestlist.add(tree)
@@ -124,9 +132,9 @@ def evolve(target, numinputs):
 				# TODO still continue search, minimize nodes
 				#break
 
-			else:
-				# XXX do not mutate champions?
-				for c in range(50):
-					newtree = deepcopy(tree)
-					newtree.mutate()
-				q.put(newtree)
+			#else:
+			# XXX do not mutate champions?
+			for c in range(50):
+				newtree = deepcopy(tree)
+				newtree.mutate()
+			q.put(newtree)
