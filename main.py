@@ -67,23 +67,23 @@ class Node:
 
 	def mutate(self, tree, depth=0):
 
-
+		# Subtree mutation
 		for child in self.children:
 			child.mutate(tree, depth+1)
 
+		# Node mutation
 		if random() < 0.25:
-			#print("mutate")
 			self.f = tree.getRandomInOutNode(*self.nio).f
 
-
+		# Node deletion
 		if random() < 0.05:
 			if len(self.children) > 0:
 				subtree = choice(self.children)
 				if len(subtree.children) == len(self.children):
 					self.children = subtree.children
-		# node switch?
 
-		#node insertion
+
+		# Node insertion
 		if depth < 10 and random() < 0.05/(2**depth) and self.nio == [2,1]:
 			#print(tree, depth)
 			subtree = Node(self.f, deepcopy(self.nio))#deepcopy(self.f)
@@ -91,6 +91,8 @@ class Node:
 			self.nio = [2,1]
 			subtree.children = self.children#deepcopy(self.children)
 			self.children = [subtree, tree.getRandomInOutNode(0,1)]#deepcopy(self)
+
+		# TODO: node switch?
 
 funcs = {
 	#inputs, outputs
@@ -160,9 +162,7 @@ class Tree:
 		while True:
 			populated = True
 			for node in self.nodes:
-				#print(len(self.nodes))
 				missing = max(0, node.nio[0]-len(node.children))
-				#print(missing)
 				for i in range(missing):
 					if len(self.nodes) >= maxnodes:
 						child = self.getRandomInNode(0)
@@ -221,8 +221,9 @@ sampleMin = -10000000#-1e10#30
 sampleMax = 10000000#1e10#30
 
 def rand():
+	# XXX Use hyperopt to perform testing? markov sampling?
 	#return (random()-0.5)*2000
-	return uniform(sampleMin, sampleMax)#use hyperopt to perform testing? markov sampling?
+	return uniform(sampleMin, sampleMax)
 	#return uniform(-2000, 2000)
 
 q = Queue()
@@ -254,9 +255,7 @@ for treeindex in range(NUMTREES):
 			tree.construct(randint(3,20))
 			trees_generated += 1
 	else:
-		#print("Queue:", q.qsize())
 		tree = q.get()
-		#print("GOT", tree)
 
 	exprstring = str(tree.expr())
 	if exprstring in cache:
@@ -312,7 +311,7 @@ for treeindex in range(NUMTREES):
 
 		cache[str(tree.expr())] = stats
 		if global_min == 0:
-			#might be just luck, not all datapoints! keep testing
+			# Might be just luck, not all datapoints! Keep testing
 
 			if tree not in champions:
 				print("FOUND!")
