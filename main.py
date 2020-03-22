@@ -202,12 +202,12 @@ def rand():
 
 q = Queue()
 
-champions = []
+champions = set()
 
 for treeindex in range(NUMTREES):
 
 	if q.empty():
-		if random() < 0.01 and len(champions) > 0:
+		if random() < 0.001 and len(champions) > 0:
 			# TODO don't try same datapoints if sampling range is small, test edge cases?
 			tree = choice(champions)
 		else:
@@ -270,7 +270,7 @@ for treeindex in range(NUMTREES):
 		if global_min == 0:
 			#might be just luck, not all datapoints! keep testing
 
-			champions.append(tree)
+			champions.add(tree)
 			print("FOUND!")
 			#q.put(tree)
 			print("CACHE:")
