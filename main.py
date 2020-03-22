@@ -182,7 +182,7 @@ def AsqrtB(a,b,c):
 	return b**(1/a)
 
 def arbitrary(a,b,c):
-	return a*(b-c)+b/a
+	return (a+b)**2+c#a*(b-c)+b/a
 
 target = arbitrary#AsqrtB#AtimesBtimesC#AtimesBplusC
 
@@ -288,8 +288,9 @@ for treeindex in range(NUMTREES):
 			except:
 				pass
 
-		dplt.plot(ydata)
-		dplt.show()
+		if len(ydata) > 1:
+			dplt.plot(ydata)
+			dplt.show()
 
 		cache[str(tree.expr())] = stats
 		if global_min == 0:
