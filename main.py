@@ -209,10 +209,6 @@ champions = set()
 
 trees_generated = 0
 
-from dynplot import dynplot
-
-dplt = dynplot()
-
 for treeindex in range(NUMTREES):
 
 	if q.empty():
@@ -275,22 +271,6 @@ for treeindex in range(NUMTREES):
 		print("New minimum: ", global_min)
 		#tree.viz()
 		print(tree.expr())
-
-		sampleRange = sampleMax - sampleMin
-		sampleSteps = 1000
-		xdata = []
-		ydata = []
-		fixed = [0,0]
-		for x in range(sampleMin, sampleMax, sampleRange//sampleSteps):
-			try:
-				xdata.append(x)
-				ydata.append(tree.evaluate([x]+fixed))
-			except:
-				pass
-
-		if len(ydata) > 1:
-			dplt.plot(ydata)
-			dplt.show()
 
 		cache[str(tree.expr())] = stats
 		if global_min == 0:
