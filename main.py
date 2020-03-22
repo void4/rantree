@@ -65,16 +65,26 @@ class Node:
 			else:
 				return f"{self.f}"
 
-	def mutate(self, tree):
-		#TODO node insertion
+	def mutate(self, tree, depth=0):
+
 
 		for child in self.children:
-			child.mutate(tree)
+			child.mutate(tree, depth+1)
 
 		if random() < 0.25:
 			#print("mutate")
 			self.f = tree.getRandomInOutNode(*self.nio).f
 
+		# node switch?
+
+		#node insertion
+		if depth < 2 and random() < 0.1/(10**depth) and self.nio == [2,1]:
+			#print(tree, depth)
+			subtree = Node(self.f, deepcopy(self.nio))#deepcopy(self.f)
+			self.f = tree.getRandomInOutNode(2,1).f
+			self.nio = [2,1]
+			subtree.children = self.children#deepcopy(self.children)
+			self.children = [subtree, tree.getRandomInOutNode(0,1)]#deepcopy(self)
 
 funcs = {
 	#inputs, outputs
@@ -201,8 +211,8 @@ cache = {}
 
 global_min = None
 
-sampleMin = -1000000#-1e10#30
-sampleMax = 1000000#1e10#30
+sampleMin = -10000000#-1e10#30
+sampleMax = 10000000#1e10#30
 
 def rand():
 	#return (random()-0.5)*2000
@@ -213,17 +223,26 @@ q = Queue()
 
 champions = set()
 
+bestlist = set()
+
 trees_generated = 0
 
 for treeindex in range(NUMTREES):
 
 	if q.empty():
-		if random() < 0.001 and len(champions) > 0:
-			# TODO don't try same datapoints if sampling range is small, test edge cases?
-			tree = choice(tuple(champions))
-			newtree = deepcopy(tree)
-			newtree.mutate()
-			q.put(newtree)
+		if random() < 0.001:
+
+			if random() < 0.5 and len(champions) > 0:
+				# TODO don't try same datapoints if sampling range is small, test edge cases?
+				tree = choice(tuple(champions))
+				newtree = deepcopy(tree)
+				newtree.mutate()
+				q.put(newtree)
+			else:
+				tree = choice(tuple(bestlist))
+				tree = deepcopy(tree)
+				tree.mutate()
+
 		else:
 			tree = Tree(funcs, inputs)
 			tree.construct(randint(3,20))
@@ -277,7 +296,11 @@ for treeindex in range(NUMTREES):
 
 	if fails == 0 and (global_min is None or average_error < global_min or average_error == 0):
 		global_min = average_error
+		print("Trees generated: ", trees_generated)
+		print("Queue length: ", q.qsize(), "Bestlist:", len(bestlist), "Champions:", len(champions))
 		print("New minimum: ", global_min)
+
+		bestlist.add(tree)
 		#tree.viz()
 		print(tree.expr())
 
@@ -290,7 +313,6 @@ for treeindex in range(NUMTREES):
 				champions.add(tree)
 
 			#q.put(tree)
-			print("Trees generated: ", trees_generated)
 			print("CACHE:")
 			for t,s in cache.items():
 				print(t, s)
@@ -299,7 +321,7 @@ for treeindex in range(NUMTREES):
 
 		else:
 			# XXX do not mutate champions?
-			for c in range(10):
+			for c in range(50):
 				newtree = deepcopy(tree)
 				newtree.mutate()
 				q.put(newtree)
