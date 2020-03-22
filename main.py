@@ -66,6 +66,8 @@ class Node:
 				return f"{self.f}"
 
 	def mutate(self, tree):
+		#TODO node insertion
+
 		for child in self.children:
 			child.mutate(tree)
 
@@ -219,6 +221,9 @@ for treeindex in range(NUMTREES):
 		if random() < 0.001 and len(champions) > 0:
 			# TODO don't try same datapoints if sampling range is small, test edge cases?
 			tree = choice(tuple(champions))
+			newtree = deepcopy(tree)
+			newtree.mutate()
+			q.put(newtree)
 		else:
 			tree = Tree(funcs, inputs)
 			tree.construct(randint(3,20))
