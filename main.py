@@ -16,6 +16,9 @@ def sum(a,b):
 def div(a,b):
 	return a/b
 
+def exp(a,b):
+	return a**b
+
 def w_const(n):
 	def const():
 		return n
@@ -81,6 +84,7 @@ funcs = {
 	mul: [2,1],
 	sum: [2,1],
 	div: [2,1],
+	exp: [2,1],
 
 	Node(-1, [0,1]): [0,1],
 	Node(2, [0,1]): [0,1],
@@ -239,7 +243,7 @@ for treeindex in range(NUMTREES):
 
 		try:
 			treeoutput = tree.evaluate(inputvalues)
-		except ZeroDivisionError:
+		except (ZeroDivisionError, OverflowError):
 			# TODO only fail if target does not raise the same!
 			fails += 1
 			continue
