@@ -202,15 +202,27 @@ def rand():
 
 q = Queue()
 
+champions = []
+
 for treeindex in range(NUMTREES):
 
 	if q.empty():
-		tree = Tree(funcs, inputs)
-		tree.construct(randint(3,20))
+		if random() < 0.01 and len(champions) > 0:
+			# TODO don't try same datapoints if sampling range is small, test edge cases?
+			tree = choice(champions)
+		else:
+			tree = Tree(funcs, inputs)
+			tree.construct(randint(3,20))
 	else:
 		#print("Queue:", q.qsize())
 		tree = q.get()
 		#print("GOT", tree)
+
+	exprstring = str(tree.expr())
+	if exprstring in cache:
+		prevstats = cache[exprstring]
+	else:
+		prevstats = {"terr": 0, "aerr": 0, "fails": 0, "tries": 0}
 
 	total_error = 0
 
@@ -228,6 +240,7 @@ for treeindex in range(NUMTREES):
 		try:
 			targetoutput = target(*inputvalues)
 		except OverflowError:
+			fails += 1
 			continue
 
 		#print("TREE:", tree.nodes)
@@ -241,18 +254,32 @@ for treeindex in range(NUMTREES):
 	average_error = total_error/NUMTREETRIALS
 	#print(treeindex, average_error)
 
-	if fails == 0 and (global_min is None or average_error < global_min):
+	combined_fails = fails + prevstats["fails"]
+	combined_total_error = total_error + prevstats["terr"]
+	combined_tries = NUMTREETRIALS + prevstats["tries"]
+
+	stats = {"terr": combined_total_error, "aerr": combined_total_error/combined_tries, "fails": combined_fails, "tries": combined_tries}
+
+	if fails == 0 and (global_min is None or average_error < global_min or average_error == 0):
 		global_min = average_error
 		print("New minimum: ", global_min)
 		#tree.viz()
 		print(tree.expr())
-		cache[tree] = average_error
-		if global_min == 0:#might be just luck, not all datapoints!
-			print("FOUND!")
-			# TODO still continue search, minimize nodes
-			break
 
-		for c in range(50):
+		cache[str(tree.expr())] = stats
+		if global_min == 0:
+			#might be just luck, not all datapoints! keep testing
+
+			champions.append(tree)
+			print("FOUND!")
+			#q.put(tree)
+			print("CACHE:")
+			for t,s in cache.items():
+				print(t, s)
+			# TODO still continue search, minimize nodes
+			#break
+
+		for c in range(10):
 			newtree = deepcopy(tree)
 			newtree.mutate()
 			q.put(newtree)
