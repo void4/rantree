@@ -197,22 +197,25 @@ global_min = None
 
 def rand():
 	#return (random()-0.5)*2000
-	return uniform(-1e30, 1e30)
+	return uniform(-1e30, 1e30)#use hyperopt to perform testing? markov sampling?
 	#return uniform(-2000, 2000)
 
 q = Queue()
 
 champions = set()
 
+trees_generated = 0
+
 for treeindex in range(NUMTREES):
 
 	if q.empty():
 		if random() < 0.001 and len(champions) > 0:
 			# TODO don't try same datapoints if sampling range is small, test edge cases?
-			tree = choice(champions)
+			tree = choice(tuple(champions))
 		else:
 			tree = Tree(funcs, inputs)
 			tree.construct(randint(3,20))
+			trees_generated += 1
 	else:
 		#print("Queue:", q.qsize())
 		tree = q.get()
@@ -270,16 +273,21 @@ for treeindex in range(NUMTREES):
 		if global_min == 0:
 			#might be just luck, not all datapoints! keep testing
 
-			champions.add(tree)
-			print("FOUND!")
+			if tree not in champions:
+				print("FOUND!")
+				champions.add(tree)
+
 			#q.put(tree)
+			print("Trees generated: ", trees_generated)
 			print("CACHE:")
 			for t,s in cache.items():
 				print(t, s)
 			# TODO still continue search, minimize nodes
 			#break
 
-		for c in range(10):
-			newtree = deepcopy(tree)
-			newtree.mutate()
-			q.put(newtree)
+		else:
+			# XXX do not mutate champions?
+			for c in range(10):
+				newtree = deepcopy(tree)
+				newtree.mutate()
+				q.put(newtree)
