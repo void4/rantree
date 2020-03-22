@@ -1,4 +1,5 @@
 from math import sin, cos, tan, pi, e
+
 from datastructures import Node
 
 def scaledrandom():
