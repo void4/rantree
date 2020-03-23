@@ -1,4 +1,4 @@
-from random import randint, choice, random, uniform
+from random import randint, choice, random, uniform, shuffle
 from copy import deepcopy
 
 class Node:
@@ -44,9 +44,14 @@ class Node:
 
 	def mutate(self, tree, depth=0):
 
+		self.value = None
+
 		# Subtree mutation
 		for child in self.children:
 			child.mutate(tree, depth+1)
+
+		if random() < 0.1:
+			shuffle(self.children)
 
 		# Node mutation
 		if random() < 0.25:

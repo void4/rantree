@@ -8,7 +8,7 @@ from datastructures import Tree, Node
 
 def evolve(target, numinputs):
 	NUMTREES = 1000000
-	NUMTREETRIALS = 1000
+	NUMTREETRIALS = 20
 
 	cache = {}
 
@@ -88,7 +88,7 @@ def evolve(target, numinputs):
 			except (ZeroDivisionError, OverflowError):
 				# TODO only fail if target does not raise the same!
 				model_failed = True
-				
+
 			try:
 				targetoutput = target(*inputvalues)
 			except (ZeroDivisionError, OverflowError):
@@ -126,7 +126,7 @@ def evolve(target, numinputs):
 
 		stats = {"terr": combined_total_error, "aerr": combined_total_error/combined_tries, "fails": combined_fails, "sfails": combined_sfails, "tries": combined_tries}
 
-		if fails == 0 and (global_min is None or average_error < global_min or average_error == 0):
+		if fails + simul_fails < NUMTREETRIALS and (global_min is None or average_error < global_min or average_error == 0):
 			global_min = average_error
 
 			print_statistics()

@@ -8,6 +8,7 @@ Expression tree transformation:
 
 - node insertion
 - node mutation
+- node shuffling
 - node deletion
 
 Expression tree nodes:
