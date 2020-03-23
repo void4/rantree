@@ -1,6 +1,7 @@
 from queue import Queue
 from copy import deepcopy
 from random import random, randint, uniform, choice
+from math import isnan, isinf
 
 from functions import funcs
 from datastructures import Tree, Node
@@ -32,29 +33,32 @@ def evolve(target, numinputs):
 
 	trees_generated = 0
 
+	running_average_error = 0
+
+	treeindex = 0
+
 	def print_statistics():
-		print("Trees generated: ", trees_generated)
+		print("Trees tested:", treeindex,"Generated: ", trees_generated)
 		print("Queue length: ", q.qsize(), "Bestlist:", len(bestlist), "Champions:", len(champions))
+		print("Running average: ", running_average_error)
 
 	for treeindex in range(NUMTREES):
 
 		if treeindex % 10000 == 0:
 			print_statistics()
 
-		if q.empty():
-			if random() < 0.05:
-
-				if random() < 0.5 and len(champions) > 0:
-					# TODO don't try same datapoints if sampling range is small, test edge cases?
-					tree = choice(tuple(champions))
-					newtree = deepcopy(tree)
-					newtree.mutate()
-					q.put(newtree)
-				else:
-					tree = choice(tuple(bestlist))
-					tree = deepcopy(tree)
-					tree.mutate()
-
+		if q.empty() or random() < 0.25:
+			r = random()
+			if r < 0.025 and len(champions) > 0:
+				# TODO don't try same datapoints if sampling range is small, test edge cases?
+				tree = choice(tuple(champions))
+				newtree = deepcopy(tree)
+				newtree.mutate()
+				q.put(newtree)
+			elif r < 0.05 and len(bestlist) > 0:
+				tree = choice(tuple(bestlist))
+				tree = deepcopy(tree)
+				tree.mutate()
 			else:
 				tree = Tree(funcs, inputs)
 				tree.construct(randint(3,20))
@@ -96,6 +100,11 @@ def evolve(target, numinputs):
 			total_error += delta
 
 		average_error = total_error/NUMTREETRIALS
+
+		running_average_steepness = 0.95
+		running_average_error = running_average_error * running_average_steepness + average_error * (1 - running_average_steepness)
+		if isnan(running_average_error) or isinf(running_average_error):
+			running_average_error = 0
 		#print(treeindex, average_error)
 
 		combined_fails = fails + prevstats["fails"]
@@ -134,7 +143,14 @@ def evolve(target, numinputs):
 
 			#else:
 			# XXX do not mutate champions?
-			for c in range(50):
+			for c in range(5):
 				newtree = deepcopy(tree)
 				newtree.mutate()
 			q.put(newtree)
+		else:
+			if average_error < running_average_error:
+				for i in range(2):
+					if random() > q.qsize()/50:
+						newtree = deepcopy(tree)
+						newtree.mutate()
+						q.put(newtree)
