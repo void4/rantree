@@ -8,7 +8,7 @@ from datastructures import Tree, Node
 
 def evolve(target, numinputs):
 	NUMTREES = 1000000
-	NUMTREETRIALS = 100
+	NUMTREETRIALS = 1000
 
 	cache = {}
 
@@ -40,7 +40,7 @@ def evolve(target, numinputs):
 	def print_statistics():
 		print("Trees tested:", treeindex,"Generated: ", trees_generated)
 		print("Queue length: ", q.qsize(), "Bestlist:", len(bestlist), "Champions:", len(champions))
-		print("Running average: ", running_average_error)
+		print("Global minimum:", global_min, "Running average: ", running_average_error)
 
 	for treeindex in range(NUMTREES):
 
@@ -70,34 +70,44 @@ def evolve(target, numinputs):
 		if exprstring in cache:
 			prevstats = cache[exprstring]
 		else:
-			prevstats = {"terr": 0, "aerr": 0, "fails": 0, "tries": 0}
+			prevstats = {"terr": 0, "aerr": 0, "fails": 0, "tries": 0, "sfails": 0}
 
 		total_error = 0
 
 		fails = 0
+		simul_fails = 0
 		for trials in range(NUMTREETRIALS):
 			inputvalues = [rand() for i in range(len(inputs))]
 			# TODO outputS?
+
+			model_failed = False
+			target_failed = False
 
 			try:
 				treeoutput = tree.evaluate(inputvalues)
 			except (ZeroDivisionError, OverflowError):
 				# TODO only fail if target does not raise the same!
-				fails += 1
-				continue
+				model_failed = True
+				
 			try:
 				targetoutput = target(*inputvalues)
-			except OverflowError:
+			except (ZeroDivisionError, OverflowError):
+				target_failed = True
+
+			# Assuming same error, doesn't have to be!
+			if model_failed and target_failed:
+				simul_fails += 1
+			elif model_failed or target_failed:
 				fails += 1
-				continue
+			else:
+				delta = abs(targetoutput-treeoutput)
+				#print(delta)
+				#print(treeoutput, targetoutput, delta)
+				total_error += delta
 
-			#print("TREE:", tree.nodes)
-
-			delta = abs(targetoutput-treeoutput)
-
-			#print(treeoutput, targetoutput, delta)
-
-			total_error += delta
+		#print(simul_fails, fails, total_error)
+		#if simul_fails + fails == NUMTREETRIALS:
+		#	continue
 
 		average_error = total_error/NUMTREETRIALS
 
@@ -110,10 +120,11 @@ def evolve(target, numinputs):
 		combined_fails = fails + prevstats["fails"]
 		combined_total_error = total_error + prevstats["terr"]
 		combined_tries = NUMTREETRIALS + prevstats["tries"]
+		combined_sfails = simul_fails + prevstats["sfails"]
 
 		# TODO measure evaluation/tree complexity
 
-		stats = {"terr": combined_total_error, "aerr": combined_total_error/combined_tries, "fails": combined_fails, "tries": combined_tries}
+		stats = {"terr": combined_total_error, "aerr": combined_total_error/combined_tries, "fails": combined_fails, "sfails": combined_sfails, "tries": combined_tries}
 
 		if fails == 0 and (global_min is None or average_error < global_min or average_error == 0):
 			global_min = average_error
